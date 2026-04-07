@@ -1,16 +1,3 @@
-"""
-Taichi Lab 1 - complex rigid body scene.
-
-Features:
-- four rigid boxes with random initial state
-- gravity + floor + four fixed walls
-- LMB drag applies force at an off-center local point on the selected body
-- RMB drag rotates camera, WASDQE moves camera
-- TAB cycles the currently selected body
-- R resets the random scene
-- SPACE pauses / resumes
-"""
-
 import numpy as np
 import taichi as ti
 

@@ -1,16 +1,3 @@
-"""
-Taichi Lab 1 - two rigid bodies with impulse-based collision response.
-
-Features:
-- two boxes with random initial state that is guaranteed to collide
-- semi-implicit rigid body integration with quaternion orientation
-- SAT-based OBB collision manifold
-- impulse-based collision response at a single contact point
-- WASDQE camera translation
-- press R to randomize a new collision scene
-- press SPACE to pause / resume
-"""
-
 import numpy as np
 import taichi as ti
 

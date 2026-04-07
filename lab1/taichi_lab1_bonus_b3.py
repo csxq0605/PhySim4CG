@@ -1,15 +1,3 @@
-"""
-Taichi Lab 1 - Bonus B3 mixed geometry scene.
-
-Features:
-- four different rigid bodies: box, sphere, cone, and convex hull
-- CPU/NumPy rigid-body stepping with impulse-based collision response
-- gravity, floor, and four fixed arena walls
-- left mouse drag applies force at an off-center local point
-- right mouse drag rotates the camera, WASDQE moves the camera
-- TAB cycles the selected body, R resets the scene, SPACE pauses
-"""
-
 import numpy as np
 import taichi as ti
 

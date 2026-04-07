@@ -1,12 +1,3 @@
-"""
-Taichi Lab 1 - Bonus B2 stable stacking exploration.
-
-CPU/NumPy is used for rigid-body stepping and Taichi is used only for
-rendering. This file contains multiple presets to compare stacking
-stability under different solver iteration counts and contact ordering
-strategies.
-"""
-
 import argparse
 import copy
 import numpy as np

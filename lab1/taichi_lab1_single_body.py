@@ -1,17 +1,3 @@
-"""
-Taichi Lab 1 - single rigid body demo.
-
-Features:
-- one rigid box with random initial state
-- semi-implicit Euler integration:
-  explicit update for v / omega, implicit update for x / q
-- orientation stored as a quaternion
-- left mouse drag applies a force at an off-center point, which also
-  generates torque
-- press R to randomize the body again
-- press SPACE to pause / resume
-"""
-
 import numpy as np
 import taichi as ti
 

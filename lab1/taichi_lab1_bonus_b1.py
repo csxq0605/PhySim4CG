@@ -1,12 +1,3 @@
-"""
-Taichi Lab 1 - Bonus B1 multi-body Newton's cradle exploration.
-
-This version keeps rigid-body stepping on CPU/NumPy and uses Taichi only
-for rendering. It also includes multiple experiment presets so you can
-compare how substeps, solver iterations, and pair-processing order affect
-energy transfer across a box chain.
-"""
-
 import argparse
 import copy
 import numpy as np

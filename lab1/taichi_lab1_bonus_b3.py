@@ -950,6 +950,14 @@ def print_controls():
     print("=" * 64)
 
 
+def draw_status_panel(gui, selected_body: int, paused: bool):
+    gui.begin("Status", 0.02, 0.02, 0.22, 0.12)
+    gui.text(f"Mode: {BODY_SPECS[selected_body]['name']}")
+    gui.text("Selectable: sphere / cone")
+    gui.text(f"State: {'paused' if paused else 'running'}")
+    gui.end()
+
+
 def main():
     randomize_complex_scene()
     print_controls()
@@ -958,6 +966,7 @@ def main():
     canvas = window.get_canvas()
     scene = window.get_scene()
     camera = ti.ui.Camera()
+    gui = window.get_gui()
 
     paused = False
     dragging = False
@@ -1079,6 +1088,7 @@ def main():
             scene.lines(force_line, color=(1.0, 0.84, 0.20), width=4.0)
 
         canvas.scene(scene)
+        draw_status_panel(gui, selected_body, paused)
         window.show()
 
 

@@ -761,6 +761,14 @@ def print_controls():
     print("=" * 76)
 
 
+def draw_status_panel(gui, paused: bool):
+    gui.begin("Status", 0.02, 0.02, 0.28, 0.12)
+    gui.text(f"Mode: {current_experiment['name']}")
+    gui.text(f"Preset: {current_experiment['description']}")
+    gui.text(f"State: {'paused' if paused else 'running'}")
+    gui.end()
+
+
 def run_interactive():
     build_mesh_indices()
     initialize_stack(0, verbose=True)
@@ -770,6 +778,7 @@ def run_interactive():
     canvas = window.get_canvas()
     scene = window.get_scene()
     camera = ti.ui.Camera()
+    gui = window.get_gui()
 
     paused = False
     rotating = False
@@ -854,6 +863,7 @@ def run_interactive():
 
         scene.particles(center_points, radius=0.022, color=(0.98, 0.92, 0.20))
         canvas.scene(scene)
+        draw_status_panel(gui, paused)
         window.show()
 
 

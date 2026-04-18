@@ -27,9 +27,13 @@ DEFAULT_SUBSTEPS = 3
 DEFAULT_PRESSURE_ITERS = 30
 DEFAULT_OVER_RELAXATION = 1.9
 DEFAULT_FLIP_RATIO = 0.95
+VELOCITY_EXTRAPOLATION_ITERS = GRID_RES
+COMPONENT_LABEL_RELAX_ITERS = GRID_RES * 3
 FLUID_DENSITY = 1.0
 DRIFT_COMPENSATION_GAIN = 1.0
 GRAVITY = ti.Vector([0.0, -9.81, 0.0])
+WINDOW_RES = (1440, 960)
+CAMERA_ROTATE_SPEED = 2.4
 
 PARTICLE_RADIUS = 0.27 * CELL_SIZE
 PARTICLE_DRAW_RADIUS = PARTICLE_RADIUS * 0.76
@@ -45,10 +49,13 @@ BOUNDARY_MIN_Z = float(PARTICLE_MIN_BOUND[2])
 BOUNDARY_MAX_X = float(PARTICLE_MAX_BOUND[0])
 BOUNDARY_MAX_Y = float(PARTICLE_MAX_BOUND[1])
 BOUNDARY_MAX_Z = float(PARTICLE_MAX_BOUND[2])
+HIDDEN_PARTICLE_POS = np.array([10.0, 10.0, 10.0], dtype=np.float32)
+CHEAP_CULL_MAX_PARTICLES = 2
 
 EMPTY_CELL = 0
 FLUID_CELL = 1
 SOLID_CELL = 2
+MAX_CELL_COMPONENTS = GRID_RES * GRID_RES * GRID_RES
 
 SEPARATION_CELL_SIZE = 2.2 * PARTICLE_RADIUS
 SEPARATION_GRID_RES = np.ceil(DOMAIN_SIZE / SEPARATION_CELL_SIZE).astype(np.int32) + 1
@@ -112,10 +119,6 @@ def create_tank_line_vertices():
 
 INITIAL_PARTICLE_POS = create_initial_particle_block()
 INITIAL_PARTICLE_VEL = np.zeros_like(INITIAL_PARTICLE_POS, dtype=np.float32)
-INITIAL_PARTICLE_COLOR = np.tile(
-    np.array([[0.18, 0.52, 0.88]], dtype=np.float32),
-    (INITIAL_PARTICLE_POS.shape[0], 1),
-)
 TANK_LINE_VERTICES = create_tank_line_vertices()
 N_PARTICLES = INITIAL_PARTICLE_POS.shape[0]
 
@@ -123,7 +126,7 @@ N_PARTICLES = INITIAL_PARTICLE_POS.shape[0]
 # Particle fields
 particle_pos = ti.Vector.field(3, dtype=ti.f32, shape=N_PARTICLES)
 particle_vel = ti.Vector.field(3, dtype=ti.f32, shape=N_PARTICLES)
-particle_color = ti.Vector.field(3, dtype=ti.f32, shape=N_PARTICLES)
+particle_active = ti.field(dtype=ti.i32, shape=N_PARTICLES)
 
 
 # MAC grid fields
@@ -138,13 +141,27 @@ grid_w_prev = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES, GRID_RES + 1))
 grid_u_weight = ti.field(dtype=ti.f32, shape=(GRID_RES + 1, GRID_RES, GRID_RES))
 grid_v_weight = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES + 1, GRID_RES))
 grid_w_weight = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES, GRID_RES + 1))
+grid_u_tmp = ti.field(dtype=ti.f32, shape=(GRID_RES + 1, GRID_RES, GRID_RES))
+grid_v_tmp = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES + 1, GRID_RES))
+grid_w_tmp = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES, GRID_RES + 1))
+grid_u_valid = ti.field(dtype=ti.i32, shape=(GRID_RES + 1, GRID_RES, GRID_RES))
+grid_v_valid = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES + 1, GRID_RES))
+grid_w_valid = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES + 1))
+grid_u_valid_tmp = ti.field(dtype=ti.i32, shape=(GRID_RES + 1, GRID_RES, GRID_RES))
+grid_v_valid_tmp = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES + 1, GRID_RES))
+grid_w_valid_tmp = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES + 1))
 
 cell_pressure = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES, GRID_RES))
 cell_type = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES))
 cell_particle_density = ti.field(dtype=ti.f32, shape=(GRID_RES, GRID_RES, GRID_RES))
+cell_particle_count = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES))
+cell_component_label = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES))
+cell_component_label_tmp = ti.field(dtype=ti.i32, shape=(GRID_RES, GRID_RES, GRID_RES))
+component_particle_sum = ti.field(dtype=ti.i32, shape=MAX_CELL_COMPONENTS)
 
 rest_density = ti.field(dtype=ti.f32, shape=())
-debug_frame_counter = ti.field(dtype=ti.i32, shape=())
+main_component_label = ti.field(dtype=ti.i32, shape=())
+main_component_particle_sum = ti.field(dtype=ti.i32, shape=())
 
 
 # Render fields
@@ -177,6 +194,23 @@ def centered_cell_coord(pos):
             (pos[2] - DOMAIN_MIN_Z) * INV_CELL_SIZE - 0.5,
         ]
     )
+
+
+@ti.func
+def particle_cell_index(pos):
+    coord = (pos - ti.Vector([DOMAIN_MIN_X, DOMAIN_MIN_Y, DOMAIN_MIN_Z])) * INV_CELL_SIZE
+    return ti.Vector(
+        [
+            ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[0]), ti.i32))),
+            ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[1]), ti.i32))),
+            ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[2]), ti.i32))),
+        ]
+    )
+
+
+@ti.func
+def cell_linear_index(i, j, k):
+    return (i * GRID_RES + j) * GRID_RES + k
 
 
 @ti.func
@@ -282,15 +316,39 @@ def sample_w_field(field: ti.template(), pos):
             value += wx * wy * wz * field[idx[0], idx[1], idx[2]]
     return value
 
-
-@ti.func
-def cell_is_solid(i, j, k):
-    return cell_type[i, j, k] == SOLID_CELL
-
-
 @ti.func
 def cell_is_fluid(i, j, k):
     return cell_type[i, j, k] == FLUID_CELL
+
+
+@ti.func
+def u_face_is_solid(i, j, k):
+    return (
+        i == 0
+        or i == GRID_RES
+        or cell_type[i - 1, j, k] == SOLID_CELL
+        or cell_type[i, j, k] == SOLID_CELL
+    )
+
+
+@ti.func
+def v_face_is_solid(i, j, k):
+    return (
+        j == 0
+        or j == GRID_RES
+        or cell_type[i, j - 1, k] == SOLID_CELL
+        or cell_type[i, j, k] == SOLID_CELL
+    )
+
+
+@ti.func
+def w_face_is_solid(i, j, k):
+    return (
+        k == 0
+        or k == GRID_RES
+        or cell_type[i, j, k - 1] == SOLID_CELL
+        or cell_type[i, j, k] == SOLID_CELL
+    )
 
 
 @ti.kernel
@@ -314,6 +372,21 @@ def reset_grid_fields():
         cell_pressure[i, j, k] = 0.0
         cell_type[i, j, k] = 0
         cell_particle_density[i, j, k] = 0.0
+        cell_particle_count[i, j, k] = 0
+        cell_component_label[i, j, k] = -1
+        cell_component_label_tmp[i, j, k] = -1
+
+    for idx in component_particle_sum:
+        component_particle_sum[idx] = 0
+
+    main_component_label[None] = -1
+    main_component_particle_sum[None] = 0
+
+
+@ti.kernel
+def activate_all_particles():
+    for p in particle_active:
+        particle_active[p] = 1
 
 
 @ti.kernel
@@ -328,13 +401,14 @@ def reset_particle_separation_state():
 @ti.kernel
 def build_particle_separation_grid():
     for p in particle_pos:
-        coord = separation_cell_coord(particle_pos[p])
-        i = ti.max(0, ti.min(SEPARATION_GRID_X - 1, ti.cast(ti.floor(coord[0]), ti.i32)))
-        j = ti.max(0, ti.min(SEPARATION_GRID_Y - 1, ti.cast(ti.floor(coord[1]), ti.i32)))
-        k = ti.max(0, ti.min(SEPARATION_GRID_Z - 1, ti.cast(ti.floor(coord[2]), ti.i32)))
-        slot = ti.atomic_add(separation_count[i, j, k], 1)
-        if slot < MAX_PARTICLES_PER_SEP_CELL:
-            separation_particles[i, j, k, slot] = p
+        if particle_active[p] != 0:
+            coord = separation_cell_coord(particle_pos[p])
+            i = ti.max(0, ti.min(SEPARATION_GRID_X - 1, ti.cast(ti.floor(coord[0]), ti.i32)))
+            j = ti.max(0, ti.min(SEPARATION_GRID_Y - 1, ti.cast(ti.floor(coord[1]), ti.i32)))
+            k = ti.max(0, ti.min(SEPARATION_GRID_Z - 1, ti.cast(ti.floor(coord[2]), ti.i32)))
+            slot = ti.atomic_add(separation_count[i, j, k], 1)
+            if slot < MAX_PARTICLES_PER_SEP_CELL:
+                separation_particles[i, j, k, slot] = p
 
 
 @ti.kernel
@@ -343,39 +417,41 @@ def compute_particle_separation():
     min_dist2 = min_dist * min_dist
 
     for p in particle_pos:
-        pos_p = particle_pos[p]
-        coord = separation_cell_coord(pos_p)
-        ci = ti.max(0, ti.min(SEPARATION_GRID_X - 1, ti.cast(ti.floor(coord[0]), ti.i32)))
-        cj = ti.max(0, ti.min(SEPARATION_GRID_Y - 1, ti.cast(ti.floor(coord[1]), ti.i32)))
-        ck = ti.max(0, ti.min(SEPARATION_GRID_Z - 1, ti.cast(ti.floor(coord[2]), ti.i32)))
+        if particle_active[p] != 0:
+            pos_p = particle_pos[p]
+            coord = separation_cell_coord(pos_p)
+            ci = ti.max(0, ti.min(SEPARATION_GRID_X - 1, ti.cast(ti.floor(coord[0]), ti.i32)))
+            cj = ti.max(0, ti.min(SEPARATION_GRID_Y - 1, ti.cast(ti.floor(coord[1]), ti.i32)))
+            ck = ti.max(0, ti.min(SEPARATION_GRID_Z - 1, ti.cast(ti.floor(coord[2]), ti.i32)))
 
-        for ox, oy, oz in ti.static(ti.ndrange(3, 3, 3)):
-            ni = ci + ox - 1
-            nj = cj + oy - 1
-            nk = ck + oz - 1
-            if (
-                0 <= ni < SEPARATION_GRID_X
-                and 0 <= nj < SEPARATION_GRID_Y
-                and 0 <= nk < SEPARATION_GRID_Z
-            ):
-                count = ti.min(separation_count[ni, nj, nk], MAX_PARTICLES_PER_SEP_CELL)
-                for s in range(count):
-                    q = separation_particles[ni, nj, nk, s]
-                    if q > p:
-                        d = pos_p - particle_pos[q]
-                        dist2 = d.dot(d)
-                        if 1e-12 < dist2 < min_dist2:
-                            dist = ti.sqrt(dist2)
-                            corr = 0.5 * (min_dist - dist) * d / dist
-                            for c in ti.static(range(3)):
-                                ti.atomic_add(particle_separation_delta[p][c], corr[c])
-                                ti.atomic_add(particle_separation_delta[q][c], -corr[c])
+            for ox, oy, oz in ti.static(ti.ndrange(3, 3, 3)):
+                ni = ci + ox - 1
+                nj = cj + oy - 1
+                nk = ck + oz - 1
+                if (
+                    0 <= ni < SEPARATION_GRID_X
+                    and 0 <= nj < SEPARATION_GRID_Y
+                    and 0 <= nk < SEPARATION_GRID_Z
+                ):
+                    count = ti.min(separation_count[ni, nj, nk], MAX_PARTICLES_PER_SEP_CELL)
+                    for s in range(count):
+                        q = separation_particles[ni, nj, nk, s]
+                        if particle_active[q] != 0 and q > p:
+                            d = pos_p - particle_pos[q]
+                            dist2 = d.dot(d)
+                            if 1e-12 < dist2 < min_dist2:
+                                dist = ti.sqrt(dist2)
+                                corr = 0.5 * (min_dist - dist) * d / dist
+                                for c in ti.static(range(3)):
+                                    ti.atomic_add(particle_separation_delta[p][c], corr[c])
+                                    ti.atomic_add(particle_separation_delta[q][c], -corr[c])
 
 
 @ti.kernel
 def apply_particle_separation():
     for p in particle_pos:
-        particle_pos[p] += particle_separation_delta[p]
+        if particle_active[p] != 0:
+            particle_pos[p] += particle_separation_delta[p]
 
 
 @ti.kernel
@@ -393,72 +469,175 @@ def initialize_cell_types():
         else:
             cell_type[i, j, k] = EMPTY_CELL
         cell_pressure[i, j, k] = 0.0
+        cell_particle_count[i, j, k] = 0
+        cell_component_label[i, j, k] = -1
+        cell_component_label_tmp[i, j, k] = -1
 
 
 @ti.kernel
 def mark_fluid_cells_from_particles():
     for p in particle_pos:
-        coord = (particle_pos[p] - ti.Vector([DOMAIN_MIN_X, DOMAIN_MIN_Y, DOMAIN_MIN_Z])) * INV_CELL_SIZE
-        i = ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[0]), ti.i32)))
-        j = ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[1]), ti.i32)))
-        k = ti.max(0, ti.min(GRID_RES - 1, ti.cast(ti.floor(coord[2]), ti.i32)))
-        if cell_type[i, j, k] != SOLID_CELL:
-            cell_type[i, j, k] = FLUID_CELL
+        if particle_active[p] != 0:
+            idx = particle_cell_index(particle_pos[p])
+            if cell_type[idx[0], idx[1], idx[2]] != SOLID_CELL:
+                cell_type[idx[0], idx[1], idx[2]] = FLUID_CELL
+                ti.atomic_add(cell_particle_count[idx[0], idx[1], idx[2]], 1)
+
+
+@ti.kernel
+def initialize_component_labels():
+    for i, j, k in cell_type:
+        label = -1
+        if cell_is_fluid(i, j, k):
+            label = cell_linear_index(i, j, k)
+        cell_component_label[i, j, k] = label
+        cell_component_label_tmp[i, j, k] = label
+
+
+@ti.kernel
+def relax_component_labels():
+    for i, j, k in cell_type:
+        label = cell_component_label[i, j, k]
+        next_label = label
+        if label >= 0:
+            if i > 0 and cell_component_label[i - 1, j, k] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i - 1, j, k])
+            if i + 1 < GRID_RES and cell_component_label[i + 1, j, k] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i + 1, j, k])
+            if j > 0 and cell_component_label[i, j - 1, k] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i, j - 1, k])
+            if j + 1 < GRID_RES and cell_component_label[i, j + 1, k] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i, j + 1, k])
+            if k > 0 and cell_component_label[i, j, k - 1] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i, j, k - 1])
+            if k + 1 < GRID_RES and cell_component_label[i, j, k + 1] >= 0:
+                next_label = ti.min(next_label, cell_component_label[i, j, k + 1])
+        cell_component_label_tmp[i, j, k] = next_label
+
+
+@ti.kernel
+def apply_component_labels():
+    for i, j, k in cell_type:
+        cell_component_label[i, j, k] = cell_component_label_tmp[i, j, k]
+
+
+@ti.kernel
+def reset_component_particle_sums():
+    for idx in component_particle_sum:
+        component_particle_sum[idx] = 0
+    main_component_label[None] = MAX_CELL_COMPONENTS
+    main_component_particle_sum[None] = 0
+
+
+@ti.kernel
+def accumulate_component_particle_sums():
+    for i, j, k in cell_type:
+        label = cell_component_label[i, j, k]
+        if label >= 0:
+            ti.atomic_add(component_particle_sum[label], cell_particle_count[i, j, k])
+
+
+@ti.kernel
+def find_main_component_particle_sum():
+    for idx in component_particle_sum:
+        ti.atomic_max(main_component_particle_sum[None], component_particle_sum[idx])
+
+
+@ti.kernel
+def find_main_component_label():
+    for idx in component_particle_sum:
+        total = component_particle_sum[idx]
+        if total > 0 and total == main_component_particle_sum[None]:
+            ti.atomic_min(main_component_label[None], idx)
+
+
+@ti.kernel
+def finalize_main_component_label():
+    if main_component_label[None] == MAX_CELL_COMPONENTS:
+        main_component_label[None] = -1
+
+
+@ti.kernel
+def cull_isolated_fluid_cells(max_particles: ti.i32):
+    main_label = main_component_label[None]
+    for i, j, k in cell_type:
+        if (
+            cell_type[i, j, k] == FLUID_CELL
+            and cell_component_label[i, j, k] != main_label
+            and cell_particle_count[i, j, k] <= max_particles
+        ):
+            cell_type[i, j, k] = EMPTY_CELL
+
+
+@ti.kernel
+def deactivate_particles_in_empty_cells():
+    hidden_pos = ti.Vector(
+        [HIDDEN_PARTICLE_POS[0], HIDDEN_PARTICLE_POS[1], HIDDEN_PARTICLE_POS[2]]
+    )
+    zero_vel = ti.Vector([0.0, 0.0, 0.0])
+    for p in particle_pos:
+        if particle_active[p] != 0:
+            idx = particle_cell_index(particle_pos[p])
+            if cell_type[idx[0], idx[1], idx[2]] == EMPTY_CELL:
+                particle_active[p] = 0
+                particle_pos[p] = hidden_pos
+                particle_vel[p] = zero_vel
 
 
 @ti.kernel
 def scatter_particles_to_grid():
     for p in particle_pos:
-        pos = particle_pos[p]
-        vel = particle_vel[p]
+        if particle_active[p] != 0:
+            pos = particle_pos[p]
+            vel = particle_vel[p]
 
-        base_u = ti.cast(ti.floor(u_face_coord(pos)), ti.i32)
-        frac_u = u_face_coord(pos) - ti.cast(base_u, ti.f32)
-        for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
-            idx = base_u + ti.Vector([ox, oy, oz])
-            if (
-                0 <= idx[0] < GRID_RES + 1
-                and 0 <= idx[1] < GRID_RES
-                and 0 <= idx[2] < GRID_RES
-            ):
-                wx = frac_u[0] if ox == 1 else 1.0 - frac_u[0]
-                wy = frac_u[1] if oy == 1 else 1.0 - frac_u[1]
-                wz = frac_u[2] if oz == 1 else 1.0 - frac_u[2]
-                weight = wx * wy * wz
-                ti.atomic_add(grid_u[idx[0], idx[1], idx[2]], weight * vel[0])
-                ti.atomic_add(grid_u_weight[idx[0], idx[1], idx[2]], weight)
+            base_u = ti.cast(ti.floor(u_face_coord(pos)), ti.i32)
+            frac_u = u_face_coord(pos) - ti.cast(base_u, ti.f32)
+            for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
+                idx = base_u + ti.Vector([ox, oy, oz])
+                if (
+                    0 <= idx[0] < GRID_RES + 1
+                    and 0 <= idx[1] < GRID_RES
+                    and 0 <= idx[2] < GRID_RES
+                ):
+                    wx = frac_u[0] if ox == 1 else 1.0 - frac_u[0]
+                    wy = frac_u[1] if oy == 1 else 1.0 - frac_u[1]
+                    wz = frac_u[2] if oz == 1 else 1.0 - frac_u[2]
+                    weight = wx * wy * wz
+                    ti.atomic_add(grid_u[idx[0], idx[1], idx[2]], weight * vel[0])
+                    ti.atomic_add(grid_u_weight[idx[0], idx[1], idx[2]], weight)
 
-        base_v = ti.cast(ti.floor(v_face_coord(pos)), ti.i32)
-        frac_v = v_face_coord(pos) - ti.cast(base_v, ti.f32)
-        for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
-            idx = base_v + ti.Vector([ox, oy, oz])
-            if (
-                0 <= idx[0] < GRID_RES
-                and 0 <= idx[1] < GRID_RES + 1
-                and 0 <= idx[2] < GRID_RES
-            ):
-                wx = frac_v[0] if ox == 1 else 1.0 - frac_v[0]
-                wy = frac_v[1] if oy == 1 else 1.0 - frac_v[1]
-                wz = frac_v[2] if oz == 1 else 1.0 - frac_v[2]
-                weight = wx * wy * wz
-                ti.atomic_add(grid_v[idx[0], idx[1], idx[2]], weight * vel[1])
-                ti.atomic_add(grid_v_weight[idx[0], idx[1], idx[2]], weight)
+            base_v = ti.cast(ti.floor(v_face_coord(pos)), ti.i32)
+            frac_v = v_face_coord(pos) - ti.cast(base_v, ti.f32)
+            for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
+                idx = base_v + ti.Vector([ox, oy, oz])
+                if (
+                    0 <= idx[0] < GRID_RES
+                    and 0 <= idx[1] < GRID_RES + 1
+                    and 0 <= idx[2] < GRID_RES
+                ):
+                    wx = frac_v[0] if ox == 1 else 1.0 - frac_v[0]
+                    wy = frac_v[1] if oy == 1 else 1.0 - frac_v[1]
+                    wz = frac_v[2] if oz == 1 else 1.0 - frac_v[2]
+                    weight = wx * wy * wz
+                    ti.atomic_add(grid_v[idx[0], idx[1], idx[2]], weight * vel[1])
+                    ti.atomic_add(grid_v_weight[idx[0], idx[1], idx[2]], weight)
 
-        base_w = ti.cast(ti.floor(w_face_coord(pos)), ti.i32)
-        frac_w = w_face_coord(pos) - ti.cast(base_w, ti.f32)
-        for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
-            idx = base_w + ti.Vector([ox, oy, oz])
-            if (
-                0 <= idx[0] < GRID_RES
-                and 0 <= idx[1] < GRID_RES
-                and 0 <= idx[2] < GRID_RES + 1
-            ):
-                wx = frac_w[0] if ox == 1 else 1.0 - frac_w[0]
-                wy = frac_w[1] if oy == 1 else 1.0 - frac_w[1]
-                wz = frac_w[2] if oz == 1 else 1.0 - frac_w[2]
-                weight = wx * wy * wz
-                ti.atomic_add(grid_w[idx[0], idx[1], idx[2]], weight * vel[2])
-                ti.atomic_add(grid_w_weight[idx[0], idx[1], idx[2]], weight)
+            base_w = ti.cast(ti.floor(w_face_coord(pos)), ti.i32)
+            frac_w = w_face_coord(pos) - ti.cast(base_w, ti.f32)
+            for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
+                idx = base_w + ti.Vector([ox, oy, oz])
+                if (
+                    0 <= idx[0] < GRID_RES
+                    and 0 <= idx[1] < GRID_RES
+                    and 0 <= idx[2] < GRID_RES + 1
+                ):
+                    wx = frac_w[0] if ox == 1 else 1.0 - frac_w[0]
+                    wy = frac_w[1] if oy == 1 else 1.0 - frac_w[1]
+                    wz = frac_w[2] if oz == 1 else 1.0 - frac_w[2]
+                    weight = wx * wy * wz
+                    ti.atomic_add(grid_w[idx[0], idx[1], idx[2]], weight * vel[2])
+                    ti.atomic_add(grid_w_weight[idx[0], idx[1], idx[2]], weight)
 
 
 @ti.kernel
@@ -483,6 +662,135 @@ def normalize_grid_velocities():
             grid_w[i, j, k] /= weight
         else:
             grid_w[i, j, k] = 0.0
+
+
+@ti.kernel
+def initialize_velocity_extrapolation():
+    for i, j, k in grid_u:
+        valid = 0
+        if grid_u_weight[i, j, k] > 0.0 and not u_face_is_solid(i, j, k):
+            valid = 1
+        grid_u_valid[i, j, k] = valid
+        grid_u_valid_tmp[i, j, k] = valid
+        grid_u_tmp[i, j, k] = grid_u[i, j, k]
+
+    for i, j, k in grid_v:
+        valid = 0
+        if grid_v_weight[i, j, k] > 0.0 and not v_face_is_solid(i, j, k):
+            valid = 1
+        grid_v_valid[i, j, k] = valid
+        grid_v_valid_tmp[i, j, k] = valid
+        grid_v_tmp[i, j, k] = grid_v[i, j, k]
+
+    for i, j, k in grid_w:
+        valid = 0
+        if grid_w_weight[i, j, k] > 0.0 and not w_face_is_solid(i, j, k):
+            valid = 1
+        grid_w_valid[i, j, k] = valid
+        grid_w_valid_tmp[i, j, k] = valid
+        grid_w_tmp[i, j, k] = grid_w[i, j, k]
+
+
+@ti.kernel
+def extrapolate_velocity_pass():
+    for i, j, k in grid_u:
+        grid_u_tmp[i, j, k] = grid_u[i, j, k]
+        grid_u_valid_tmp[i, j, k] = grid_u_valid[i, j, k]
+        if grid_u_valid[i, j, k] == 0 and not u_face_is_solid(i, j, k):
+            total = 0.0
+            count = 0
+            if i > 0 and grid_u_valid[i - 1, j, k] == 1:
+                total += grid_u[i - 1, j, k]
+                count += 1
+            if i + 1 < GRID_RES + 1 and grid_u_valid[i + 1, j, k] == 1:
+                total += grid_u[i + 1, j, k]
+                count += 1
+            if j > 0 and grid_u_valid[i, j - 1, k] == 1:
+                total += grid_u[i, j - 1, k]
+                count += 1
+            if j + 1 < GRID_RES and grid_u_valid[i, j + 1, k] == 1:
+                total += grid_u[i, j + 1, k]
+                count += 1
+            if k > 0 and grid_u_valid[i, j, k - 1] == 1:
+                total += grid_u[i, j, k - 1]
+                count += 1
+            if k + 1 < GRID_RES and grid_u_valid[i, j, k + 1] == 1:
+                total += grid_u[i, j, k + 1]
+                count += 1
+            if count > 0:
+                grid_u_tmp[i, j, k] = total / ti.cast(count, ti.f32)
+                grid_u_valid_tmp[i, j, k] = 1
+
+    for i, j, k in grid_v:
+        grid_v_tmp[i, j, k] = grid_v[i, j, k]
+        grid_v_valid_tmp[i, j, k] = grid_v_valid[i, j, k]
+        if grid_v_valid[i, j, k] == 0 and not v_face_is_solid(i, j, k):
+            total = 0.0
+            count = 0
+            if i > 0 and grid_v_valid[i - 1, j, k] == 1:
+                total += grid_v[i - 1, j, k]
+                count += 1
+            if i + 1 < GRID_RES and grid_v_valid[i + 1, j, k] == 1:
+                total += grid_v[i + 1, j, k]
+                count += 1
+            if j > 0 and grid_v_valid[i, j - 1, k] == 1:
+                total += grid_v[i, j - 1, k]
+                count += 1
+            if j + 1 < GRID_RES + 1 and grid_v_valid[i, j + 1, k] == 1:
+                total += grid_v[i, j + 1, k]
+                count += 1
+            if k > 0 and grid_v_valid[i, j, k - 1] == 1:
+                total += grid_v[i, j, k - 1]
+                count += 1
+            if k + 1 < GRID_RES and grid_v_valid[i, j, k + 1] == 1:
+                total += grid_v[i, j, k + 1]
+                count += 1
+            if count > 0:
+                grid_v_tmp[i, j, k] = total / ti.cast(count, ti.f32)
+                grid_v_valid_tmp[i, j, k] = 1
+
+    for i, j, k in grid_w:
+        grid_w_tmp[i, j, k] = grid_w[i, j, k]
+        grid_w_valid_tmp[i, j, k] = grid_w_valid[i, j, k]
+        if grid_w_valid[i, j, k] == 0 and not w_face_is_solid(i, j, k):
+            total = 0.0
+            count = 0
+            if i > 0 and grid_w_valid[i - 1, j, k] == 1:
+                total += grid_w[i - 1, j, k]
+                count += 1
+            if i + 1 < GRID_RES and grid_w_valid[i + 1, j, k] == 1:
+                total += grid_w[i + 1, j, k]
+                count += 1
+            if j > 0 and grid_w_valid[i, j - 1, k] == 1:
+                total += grid_w[i, j - 1, k]
+                count += 1
+            if j + 1 < GRID_RES and grid_w_valid[i, j + 1, k] == 1:
+                total += grid_w[i, j + 1, k]
+                count += 1
+            if k > 0 and grid_w_valid[i, j, k - 1] == 1:
+                total += grid_w[i, j, k - 1]
+                count += 1
+            if k + 1 < GRID_RES + 1 and grid_w_valid[i, j, k + 1] == 1:
+                total += grid_w[i, j, k + 1]
+                count += 1
+            if count > 0:
+                grid_w_tmp[i, j, k] = total / ti.cast(count, ti.f32)
+                grid_w_valid_tmp[i, j, k] = 1
+
+
+@ti.kernel
+def apply_extrapolated_velocities():
+    for i, j, k in grid_u:
+        grid_u[i, j, k] = grid_u_tmp[i, j, k]
+        grid_u_valid[i, j, k] = grid_u_valid_tmp[i, j, k]
+
+    for i, j, k in grid_v:
+        grid_v[i, j, k] = grid_v_tmp[i, j, k]
+        grid_v_valid[i, j, k] = grid_v_valid_tmp[i, j, k]
+
+    for i, j, k in grid_w:
+        grid_w[i, j, k] = grid_w_tmp[i, j, k]
+        grid_w_valid[i, j, k] = grid_w_valid_tmp[i, j, k]
 
 
 @ti.kernel
@@ -521,25 +829,26 @@ def copy_grid_to_previous():
 @ti.kernel
 def grid_to_particles(flip_ratio: ti.f32):
     for p in particle_pos:
-        pos = particle_pos[p]
-        old_vel = particle_vel[p]
+        if particle_active[p] != 0:
+            pos = particle_pos[p]
+            old_vel = particle_vel[p]
 
-        pic_velocity = ti.Vector(
-            [
-                sample_u_field(grid_u, pos),
-                sample_v_field(grid_v, pos),
-                sample_w_field(grid_w, pos),
-            ]
-        )
-        flip_delta = ti.Vector(
-            [
-                sample_u_field(grid_u, pos) - sample_u_field(grid_u_prev, pos),
-                sample_v_field(grid_v, pos) - sample_v_field(grid_v_prev, pos),
-                sample_w_field(grid_w, pos) - sample_w_field(grid_w_prev, pos),
-            ]
-        )
-        flip_velocity = old_vel + flip_delta
-        particle_vel[p] = (1.0 - flip_ratio) * pic_velocity + flip_ratio * flip_velocity
+            pic_velocity = ti.Vector(
+                [
+                    sample_u_field(grid_u, pos),
+                    sample_v_field(grid_v, pos),
+                    sample_w_field(grid_w, pos),
+                ]
+            )
+            flip_delta = ti.Vector(
+                [
+                    sample_u_field(grid_u, pos) - sample_u_field(grid_u_prev, pos),
+                    sample_v_field(grid_v, pos) - sample_v_field(grid_v_prev, pos),
+                    sample_w_field(grid_w, pos) - sample_w_field(grid_w_prev, pos),
+                ]
+            )
+            flip_velocity = old_vel + flip_delta
+            particle_vel[p] = (1.0 - flip_ratio) * pic_velocity + flip_ratio * flip_velocity
 
 
 @ti.kernel
@@ -551,22 +860,23 @@ def clear_density_grid():
 @ti.kernel
 def scatter_particle_density():
     for p in particle_pos:
-        pos = particle_pos[p]
-        coord = centered_cell_coord(pos)
-        base = ti.cast(ti.floor(coord), ti.i32)
-        frac = coord - ti.cast(base, ti.f32)
+        if particle_active[p] != 0:
+            pos = particle_pos[p]
+            coord = centered_cell_coord(pos)
+            base = ti.cast(ti.floor(coord), ti.i32)
+            frac = coord - ti.cast(base, ti.f32)
 
-        for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
-            idx = base + ti.Vector([ox, oy, oz])
-            if (
-                0 <= idx[0] < GRID_RES
-                and 0 <= idx[1] < GRID_RES
-                and 0 <= idx[2] < GRID_RES
-            ):
-                wx = frac[0] if ox == 1 else 1.0 - frac[0]
-                wy = frac[1] if oy == 1 else 1.0 - frac[1]
-                wz = frac[2] if oz == 1 else 1.0 - frac[2]
-                ti.atomic_add(cell_particle_density[idx[0], idx[1], idx[2]], wx * wy * wz)
+            for ox, oy, oz in ti.static(ti.ndrange(2, 2, 2)):
+                idx = base + ti.Vector([ox, oy, oz])
+                if (
+                    0 <= idx[0] < GRID_RES
+                    and 0 <= idx[1] < GRID_RES
+                    and 0 <= idx[2] < GRID_RES
+                ):
+                    wx = frac[0] if ox == 1 else 1.0 - frac[0]
+                    wy = frac[1] if oy == 1 else 1.0 - frac[1]
+                    wz = frac[2] if oz == 1 else 1.0 - frac[2]
+                    ti.atomic_add(cell_particle_density[idx[0], idx[1], idx[2]], wx * wy * wz)
 
 
 @ti.kernel
@@ -676,18 +986,18 @@ def apply_pressure_gradient(dt: ti.f32):
 def initialize_scene():
     particle_pos.from_numpy(INITIAL_PARTICLE_POS)
     particle_vel.from_numpy(INITIAL_PARTICLE_VEL)
-    particle_color.from_numpy(INITIAL_PARTICLE_COLOR)
+    activate_all_particles()
     tank_line_verts.from_numpy(TANK_LINE_VERTICES)
     reset_grid_fields()
     rest_density[None] = 0.0
-    debug_frame_counter[None] = 0
 
 
 @ti.kernel
 def integrate_particles(dt: ti.f32):
     for p in particle_pos:
-        particle_vel[p] += GRAVITY * dt
-        particle_pos[p] += particle_vel[p] * dt
+        if particle_active[p] != 0:
+            particle_vel[p] += GRAVITY * dt
+            particle_pos[p] += particle_vel[p] * dt
 
 
 def push_particles_apart(num_iters: int):
@@ -702,38 +1012,60 @@ def push_particles_apart(num_iters: int):
 @ti.kernel
 def handle_particle_collisions():
     for p in particle_pos:
-        pos = particle_pos[p]
-        vel = particle_vel[p]
+        if particle_active[p] != 0:
+            pos = particle_pos[p]
+            vel = particle_vel[p]
 
-        if pos[0] < BOUNDARY_MIN_X:
-            pos[0] = BOUNDARY_MIN_X
-            if vel[0] < 0.0:
-                vel[0] = 0.0
-        elif pos[0] > BOUNDARY_MAX_X:
-            pos[0] = BOUNDARY_MAX_X
-            if vel[0] > 0.0:
-                vel[0] = 0.0
+            if pos[0] < BOUNDARY_MIN_X:
+                pos[0] = BOUNDARY_MIN_X
+                if vel[0] < 0.0:
+                    vel[0] = 0.0
+            elif pos[0] > BOUNDARY_MAX_X:
+                pos[0] = BOUNDARY_MAX_X
+                if vel[0] > 0.0:
+                    vel[0] = 0.0
 
-        if pos[1] < BOUNDARY_MIN_Y:
-            pos[1] = BOUNDARY_MIN_Y
-            if vel[1] < 0.0:
-                vel[1] = 0.0
-        elif pos[1] > BOUNDARY_MAX_Y:
-            pos[1] = BOUNDARY_MAX_Y
-            if vel[1] > 0.0:
-                vel[1] = 0.0
+            if pos[1] < BOUNDARY_MIN_Y:
+                pos[1] = BOUNDARY_MIN_Y
+                if vel[1] < 0.0:
+                    vel[1] = 0.0
+            elif pos[1] > BOUNDARY_MAX_Y:
+                pos[1] = BOUNDARY_MAX_Y
+                if vel[1] > 0.0:
+                    vel[1] = 0.0
 
-        if pos[2] < BOUNDARY_MIN_Z:
-            pos[2] = BOUNDARY_MIN_Z
-            if vel[2] < 0.0:
-                vel[2] = 0.0
-        elif pos[2] > BOUNDARY_MAX_Z:
-            pos[2] = BOUNDARY_MAX_Z
-            if vel[2] > 0.0:
-                vel[2] = 0.0
+            if pos[2] < BOUNDARY_MIN_Z:
+                pos[2] = BOUNDARY_MIN_Z
+                if vel[2] < 0.0:
+                    vel[2] = 0.0
+            elif pos[2] > BOUNDARY_MAX_Z:
+                pos[2] = BOUNDARY_MAX_Z
+                if vel[2] > 0.0:
+                    vel[2] = 0.0
 
-        particle_pos[p] = pos
-        particle_vel[p] = vel
+            particle_pos[p] = pos
+            particle_vel[p] = vel
+
+
+def cull_isolated_spray_particles():
+    initialize_component_labels()
+    for _ in range(COMPONENT_LABEL_RELAX_ITERS):
+        relax_component_labels()
+        apply_component_labels()
+    reset_component_particle_sums()
+    accumulate_component_particle_sums()
+    find_main_component_particle_sum()
+    find_main_component_label()
+    finalize_main_component_label()
+    cull_isolated_fluid_cells(CHEAP_CULL_MAX_PARTICLES)
+    deactivate_particles_in_empty_cells()
+
+
+def extrapolate_velocity_fields():
+    initialize_velocity_extrapolation()
+    for _ in range(VELOCITY_EXTRAPOLATION_ITERS):
+        extrapolate_velocity_pass()
+        apply_extrapolated_velocities()
 
 
 def transfer_velocities(to_grid: bool, flip_ratio: float):
@@ -741,8 +1073,11 @@ def transfer_velocities(to_grid: bool, flip_ratio: float):
         reset_grid_fields()
         initialize_cell_types()
         mark_fluid_cells_from_particles()
+        cull_isolated_spray_particles()
         scatter_particles_to_grid()
         normalize_grid_velocities()
+        apply_solid_velocity_constraints()
+        extrapolate_velocity_fields()
         apply_solid_velocity_constraints()
         copy_grid_to_previous()
     else:
@@ -769,6 +1104,8 @@ def solve_incompressibility(
             1 if compensate_drift else 0,
         )
     apply_pressure_gradient(dt)
+    apply_solid_velocity_constraints()
+    extrapolate_velocity_fields()
     apply_solid_velocity_constraints()
 
 
@@ -800,17 +1137,43 @@ def simulate_frame(
         transfer_velocities(False, flip_ratio)
 
 
+camera_pos = np.array([1.30, 0.82, 1.42], dtype=np.float32)
+camera_target = np.array([0.0, -0.08, 0.0], dtype=np.float32)
+
+
+def rotate_camera_from_mouse(dx: float, dy: float):
+    global camera_pos
+
+    offset = camera_pos - camera_target
+    radius = max(np.linalg.norm(offset), 1e-6)
+    azimuth = np.arctan2(offset[2], offset[0])
+    horizontal = np.sqrt(offset[0] * offset[0] + offset[2] * offset[2])
+    elevation = np.arctan2(offset[1], horizontal)
+
+    azimuth -= dx * CAMERA_ROTATE_SPEED
+    elevation -= dy * CAMERA_ROTATE_SPEED
+    elevation = np.clip(elevation, -0.48 * np.pi, 0.48 * np.pi)
+
+    camera_pos = camera_target + radius * np.array(
+        [
+            np.cos(elevation) * np.cos(azimuth),
+            np.sin(elevation),
+            np.cos(elevation) * np.sin(azimuth),
+        ],
+        dtype=np.float32,
+    )
+
+
 def print_controls():
-    print("=" * 56)
+    print("=" * 64)
     print("Taichi Lab 2 - FLIP fluid demo")
-    print("=" * 56)
+    print("=" * 64)
     print("Controls:")
-    print("  Space : pause / resume")
-    print("  R     : reset particles")
-    print("  GUI   : drag sliders for frame dt and flipRatio")
-    print("  G     : toggle tank wireframe")
-    print("  RMB   : orbit camera")
-    print("=" * 56)
+    print("  Space    : pause / resume")
+    print("  R        : reset particles")
+    print("  G        : toggle tank wireframe")
+    print("  RMB drag : orbit camera")
+    print("=" * 64)
 
 
 def draw_status_panel(
@@ -818,32 +1181,25 @@ def draw_status_panel(
     paused: bool,
     frame_dt: float,
     flip_ratio: float,
-    show_tank: bool,
 ):
-    gui.begin("Lab 2 Controls", 0.02, 0.02, 0.38, 0.32)
+    gui.begin("Lab 2 Controls", 0.02, 0.02, 0.26, 0.18)
     reset_requested = gui.button("Reset")
     paused = gui.checkbox("Paused", paused)
-    show_tank = gui.checkbox("Show tank", show_tank)
     frame_dt = gui.slider_float("frame dt", frame_dt, 1.0 / 240.0, 1.0 / 20.0)
     flip_ratio = gui.slider_float("flipRatio", flip_ratio, 0.0, 1.0)
-    gui.text(f"state: {'paused' if paused else 'running'}")
-    gui.text(f"particles: {N_PARTICLES}")
-    gui.text(f"grid resolution: {GRID_RES}^3")
-    gui.text(f"substeps = {DEFAULT_SUBSTEPS}")
-    gui.text(f"pressure iters = {DEFAULT_PRESSURE_ITERS}")
-    gui.text(f"dt = {frame_dt:.5f}")
-    gui.text(f"flip = {flip_ratio:.2f}")
+    gui.text("velocity transfer: PIC / FLIP blend")
     gui.end()
     return (
         paused,
         frame_dt,
         flip_ratio,
-        show_tank,
         reset_requested,
     )
 
 
 def main():
+    global camera_pos, camera_target
+
     initialize_scene()
     print_controls()
 
@@ -858,15 +1214,17 @@ def main():
     paused = False
     show_tank = True
 
-    window = ti.ui.Window("Taichi FLIP Fluid - Lab 2", res=(960, 720), vsync=True)
+    window = ti.ui.Window("Taichi FLIP Fluid - Lab 2", res=WINDOW_RES, vsync=True)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
     camera = ti.ui.Camera()
     gui = window.get_gui()
 
-    camera.position(1.30, 0.82, 1.42)
-    camera.lookat(0.0, -0.08, 0.0)
-    camera.up(0.0, 1.0, 0.0)
+    camera_pos = np.array([1.30, 0.82, 1.42], dtype=np.float32)
+    camera_target = np.array([0.0, -0.08, 0.0], dtype=np.float32)
+    rotating = False
+    last_mouse_x = 0.0
+    last_mouse_y = 0.0
 
     while window.running:
         for event in window.get_events(ti.ui.PRESS):
@@ -879,6 +1237,21 @@ def main():
             elif event.key == "g":
                 show_tank = not show_tank
 
+        if window.is_pressed(ti.ui.RMB):
+            mouse_x, mouse_y = window.get_cursor_pos()
+            if not rotating:
+                rotating = True
+                last_mouse_x = mouse_x
+                last_mouse_y = mouse_y
+            else:
+                dx = mouse_x - last_mouse_x
+                dy = mouse_y - last_mouse_y
+                rotate_camera_from_mouse(dx, dy)
+                last_mouse_x = mouse_x
+                last_mouse_y = mouse_y
+        else:
+            rotating = False
+
         if not paused:
             simulate_frame(
                 frame_dt,
@@ -890,10 +1263,10 @@ def main():
                 separate_particles,
                 compensate_drift,
             )
-            debug_frame_counter[None] += 1
 
-        camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
-
+        camera.position(*camera_pos)
+        camera.lookat(*camera_target)
+        camera.up(0.0, 1.0, 0.0)
         scene.set_camera(camera)
         scene.ambient_light((0.72, 0.72, 0.72))
         scene.point_light((1.8, 2.2, 1.6), (1.15, 1.15, 1.15))
@@ -913,14 +1286,12 @@ def main():
             paused,
             frame_dt,
             flip_ratio,
-            show_tank,
             reset_requested,
         ) = draw_status_panel(
             gui,
             paused,
             frame_dt,
             flip_ratio,
-            show_tank,
         )
         if reset_requested:
             initialize_scene()

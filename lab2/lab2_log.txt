@@ -1,0 +1,392 @@
+commit afefaa2b1014717c8ab98d24daf78a246dac88e5
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Sat Apr 18 13:27:22 2026 +0800
+
+            modified:   imgui.ini
+            new file:   lab2/demo/b1.gif
+            new file:   lab2/demo/b4.gif
+            new file:   lab2/demo/base.gif
+            modified:   lab2/imgui.ini
+            new file:   lab2/lab2_report.md
+            new file:   lab2/taichi_lab2_bonus_b1.py
+            new file:   lab2/taichi_lab2_bonus_b4_apic.py
+            modified:   lab2/taichi_lab2_flip.py
+
+ imgui.ini                         |    5 +
+ lab2/demo/b1.gif                  |  Bin 0 -> 56556759 bytes
+ lab2/demo/b4.gif                  |  Bin 0 -> 93123811 bytes
+ lab2/demo/base.gif                |  Bin 0 -> 47759688 bytes
+ lab2/imgui.ini                    |   14 +-
+ lab2/lab2_report.md               |  190 +++++
+ lab2/taichi_lab2_bonus_b1.py      | 1636 ++++++++++++++++++++++++++++++++++++
+ lab2/taichi_lab2_bonus_b4_apic.py | 1670 +++++++++++++++++++++++++++++++++++++
+ lab2/taichi_lab2_flip.py          |  771 ++++++++++++-----
+ 9 files changed, 4084 insertions(+), 202 deletions(-)
+
+commit 23e9cd76d3658a31d45276c62c8915da003e75c4
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Thu Apr 16 22:41:49 2026 +0800
+
+            new file:   lab2/imgui.ini
+            new file:   lab2/lab2-Flip.md
+            new file:   lab2/lab2-Flip.pdf
+            new file:   lab2/taichi_lab2_flip.py
+
+ lab2/imgui.ini           |  15 +
+ lab2/lab2-Flip.md        | 122 +++++++
+ lab2/lab2-Flip.pdf       | Bin 0 -> 723937 bytes
+ lab2/taichi_lab2_flip.py | 931 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 1068 insertions(+)
+
+commit 3244e31df5a801d9f990fd7913cd36da086f3b21
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Tue Apr 7 20:09:25 2026 +0800
+
+            deleted:    lab1/__pycache__/taichi_lab1_bonus_b1.cpython-312.pyc
+            deleted:    lab1/__pycache__/taichi_lab1_bonus_b2.cpython-312.pyc
+            deleted:    lab1/__pycache__/taichi_lab1_bonus_b3.cpython-312.pyc
+            new file:   lab1/lab1_log.txt
+            modified:   lab1/lab1_report.md
+            modified:   lab1/taichi_lab1_bonus_b1.py
+            modified:   lab1/taichi_lab1_bonus_b2.py
+            modified:   lab1/taichi_lab1_bonus_b3.py
+            modified:   lab1/taichi_lab1_complex_scene.py
+            modified:   lab1/taichi_lab1_single_body.py
+            modified:   lab1/taichi_lab1_two_body.py
+
+ .../taichi_lab1_bonus_b1.cpython-312.pyc           | Bin 40313 -> 0 bytes
+ .../taichi_lab1_bonus_b2.cpython-312.pyc           | Bin 43463 -> 0 bytes
+ .../taichi_lab1_bonus_b3.cpython-312.pyc           | Bin 61006 -> 0 bytes
+ lab1/lab1_log.txt                                  | 323 +++++++++++++++++++++
+ lab1/lab1_report.md                                |  20 +-
+ lab1/taichi_lab1_bonus_b1.py                       |   9 -
+ lab1/taichi_lab1_bonus_b2.py                       |   9 -
+ lab1/taichi_lab1_bonus_b3.py                       |  12 -
+ lab1/taichi_lab1_complex_scene.py                  |  13 -
+ lab1/taichi_lab1_single_body.py                    |  14 -
+ lab1/taichi_lab1_two_body.py                       |  13 -
+ 11 files changed, 335 insertions(+), 78 deletions(-)
+
+commit ce39c6493b7d546d240a347744b026a60ac03785
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Tue Apr 7 19:52:56 2026 +0800
+
+            new file:   lab1/__pycache__/taichi_lab1_bonus_b1.cpython-312.pyc
+            new file:   lab1/__pycache__/taichi_lab1_bonus_b2.cpython-312.pyc
+            new file:   lab1/__pycache__/taichi_lab1_bonus_b3.cpython-312.pyc
+            new file:   lab1/demo/b1.gif
+            new file:   lab1/demo/b2.gif
+            new file:   lab1/demo/b3.gif
+            new file:   lab1/demo/complex.gif
+            new file:   lab1/demo/single.gif
+            new file:   lab1/demo/two.gif
+            modified:   lab1/imgui.ini
+            new file:   lab1/lab1_report.md
+            modified:   lab1/taichi_lab1_bonus_b1.py
+            modified:   lab1/taichi_lab1_bonus_b2.py
+            modified:   lab1/taichi_lab1_bonus_b3.py
+
+ .../taichi_lab1_bonus_b1.cpython-312.pyc           | Bin 0 -> 40313 bytes
+ .../taichi_lab1_bonus_b2.cpython-312.pyc           | Bin 0 -> 43463 bytes
+ .../taichi_lab1_bonus_b3.cpython-312.pyc           | Bin 0 -> 61006 bytes
+ lab1/demo/b1.gif                                   | Bin 0 -> 24830006 bytes
+ lab1/demo/b2.gif                                   | Bin 0 -> 18383335 bytes
+ lab1/demo/b3.gif                                   | Bin 0 -> 25404563 bytes
+ lab1/demo/complex.gif                              | Bin 0 -> 21858142 bytes
+ lab1/demo/single.gif                               | Bin 0 -> 11964263 bytes
+ lab1/demo/two.gif                                  | Bin 0 -> 14886760 bytes
+ lab1/imgui.ini                                     |   5 +
+ lab1/lab1_report.md                                | 350 +++++++++++++++++++++
+ lab1/taichi_lab1_bonus_b1.py                       |  10 +
+ lab1/taichi_lab1_bonus_b2.py                       |  10 +
+ lab1/taichi_lab1_bonus_b3.py                       |  10 +
+ 14 files changed, 385 insertions(+)
+
+commit 35053c85a845a90447503af68ad8808c094e0b78
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Tue Apr 7 18:59:18 2026 +0800
+
+            new file:   .vscode/settings.json
+            new file:   lab1/imgui.ini
+            new file:   lab1/taichi_lab1_bonus_b1.py
+            new file:   lab1/taichi_lab1_bonus_b2.py
+            new file:   lab1/taichi_lab1_bonus_b3.py
+            new file:   lab1/taichi_lab1_complex_scene.py
+            new file:   lab1/taichi_lab1_single_body.py
+            new file:   lab1/taichi_lab1_two_body.py
+
+ .vscode/settings.json             |    4 +
+ lab0/taichi/taichi_lab1_empty.py  |  294 ----------
+ lab1/imgui.ini                    |    5 +
+ lab1/taichi_lab1_bonus_b1.py      |  835 ++++++++++++++++++++++++++++
+ lab1/taichi_lab1_bonus_b2.py      |  878 ++++++++++++++++++++++++++++++
+ lab1/taichi_lab1_bonus_b3.py      | 1086 +++++++++++++++++++++++++++++++++++++
+ lab1/taichi_lab1_complex_scene.py |  857 +++++++++++++++++++++++++++++
+ lab1/taichi_lab1_single_body.py   |  476 ++++++++++++++++
+ lab1/taichi_lab1_two_body.py      |  612 +++++++++++++++++++++
+ 9 files changed, 4753 insertions(+), 294 deletions(-)
+
+commit 5275abc4af8042c4fec16c19ce6e51493fc6d51e
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Tue Apr 7 10:30:51 2026 +0800
+
+            new file:   imgui.ini
+            new file:   lab1/lab1-RigidBody.md
+            new file:   lab1/lab1-RigidBody.pdf
+            new file:   lab1/taichi_lab1_empty.py
+            new file:   taichi-sample/02_box_solid.py
+            new file:   taichi-sample/04_sine_wave_balls.py
+            new file:   taichi-sample/07_tetrahedral_mesh.py
+            new file:   taichi-sample/08_2d_primitives.py
+
+ imgui.ini                            |   5 +
+ lab1/lab1-RigidBody.md               | 138 ++++++++++++++++
+ lab1/lab1-RigidBody.pdf              | Bin 0 -> 761802 bytes
+ lab1/taichi_lab1_empty.py            | 294 +++++++++++++++++++++++++++++++++++
+ taichi-sample/02_box_solid.py        | 144 +++++++++++++++++
+ taichi-sample/04_sine_wave_balls.py  | 241 ++++++++++++++++++++++++++++
+ taichi-sample/07_tetrahedral_mesh.py | 285 +++++++++++++++++++++++++++++++++
+ taichi-sample/08_2d_primitives.py    | 199 ++++++++++++++++++++++++
+ 8 files changed, 1306 insertions(+)
+
+commit 869e0e1303e8a203a634cf50ec97f8023f74ec84
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Thu Mar 5 20:20:26 2026 +0800
+
+            new file:   .vscode/c_cpp_properties.json
+
+ .vscode/c_cpp_properties.json | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+commit b60e0455d6a793b4a4c795a25f80bffaa296b255
+Author: csxq0605 <wsu0605@gmail.com>
+Date:   Thu Mar 5 19:50:07 2026 +0800
+
+            modified:   LICENSE
+            modified:   README.md
+            new file:   lab0/lab-readme.pdf
+            new file:   lab0/taichi/taichi_demo.py
+            new file:   lab0/taichi/taichi_lab1_empty.py
+            new file:   lab0/vcx/lab0-codebase.pdf
+            new file:   lab0/vcx/vcx-sim-master/.clang-format
+            new file:   lab0/vcx/vcx-sim-master/.gitignore
+            new file:   lab0/vcx/vcx-sim-master/LICENSE
+            new file:   lab0/vcx/vcx-sim-master/README.md
+            new file:   lab0/vcx/vcx-sim-master/assets/fonts/Ubuntu.ttf
+            new file:   lab0/vcx/vcx-sim-master/assets/fonts/UbuntuMono.ttf
+            new file:   lab0/vcx/vcx-sim-master/assets/images/ground.jpg
+            new file:   lab0/vcx/vcx-sim-master/assets/images/lab0-case1.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/lab0-case2.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/lab0-case3.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/lab0-case4.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/lab0-case5.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/vcl-logo-16x16.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/vcl-logo-256x256.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/vcl-logo-32x32.png
+            new file:   lab0/vcx/vcx-sim-master/assets/images/vcl-logo-48x48.png
+            new file:   lab0/vcx/vcx-sim-master/assets/scenes/fluid/fluid.yaml
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/flat.frag
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/flat.vert
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/fluid.frag
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/fluid.vert
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/phong.frag
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/sphere_phong.vert
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/triangle.frag
+            new file:   lab0/vcx/vcx-sim-master/assets/shaders/triangle.vert
+            new file:   lab0/vcx/vcx-sim-master/lab0-GettingStarted.md
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/imgui_impl_glfw.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/imgui_impl_glfw.h
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/imgui_impl_opengl3.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/imgui_impl_opengl3.h
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/imgui_impl_opengl3_loader.h
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/scope.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/stb_image.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/3rdparty/tiny_obj_loader.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Assets/bundled.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Async.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Camera.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Formats.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Frame.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Program.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Program.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/RenderItem.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/RenderItem.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Sampler.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Shader.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Shader.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Texture.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/UniformBlock.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/VertexLayout.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/resource.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/uniform.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Scene.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Scene.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Sphere.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/Sphere.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/SurfaceMesh.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/SurfaceMesh.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/TextureND.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/app.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/app.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/loader.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/loader.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/math.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/prelude.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Engine/type.hpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Examples/ImGui/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Examples/Triangle/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/App.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/App.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseBox.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseBox.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseFixed.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseFixed.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseFluid.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseFluid.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseMassSpring.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseMassSpring.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseResizable.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/CaseResizable.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/FluidSimulator.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/MassSpringSystem.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/0-GettingStarted/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/1-RigidBody/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/2-FluidSimulation/FluidSimulator.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/2-FluidSimulation/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/3-FEM/main.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/FlyCameraManager.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/FlyCameraManager.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/ICase.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/ImGuiHelper.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/ImGuiHelper.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/ImageRGB.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/ImageRGB.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/OrbitCameraManager.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/OrbitCameraManager.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/UI.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/UI.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Scene/Content.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Scene/Content.h
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Scene/SceneObject.cpp
+            new file:   lab0/vcx/vcx-sim-master/src/VCX/Labs/Scene/SceneObject.h
+            new file:   lab0/vcx/vcx-sim-master/xmake.lua
+
+ LICENSE                                            |  42 +-
+ README.md                                          |   4 +-
+ lab0/lab-readme.pdf                                | Bin 0 -> 1398241 bytes
+ lab0/taichi/taichi_demo.py                         | 145 ++++
+ lab0/taichi/taichi_lab1_empty.py                   | 294 +++++++
+ lab0/vcx/lab0-codebase.pdf                         | Bin 0 -> 734643 bytes
+ lab0/vcx/vcx-sim-master/.clang-format              | 152 ++++
+ lab0/vcx/vcx-sim-master/.gitignore                 |  11 +
+ lab0/vcx/vcx-sim-master/LICENSE                    |  21 +
+ lab0/vcx/vcx-sim-master/README.md                  | 176 +++++
+ lab0/vcx/vcx-sim-master/assets/fonts/Ubuntu.ttf    | Bin 0 -> 279384 bytes
+ .../vcx/vcx-sim-master/assets/fonts/UbuntuMono.ttf | Bin 0 -> 205748 bytes
+ lab0/vcx/vcx-sim-master/assets/images/ground.jpg   | Bin 0 -> 339354 bytes
+ .../vcx-sim-master/assets/images/lab0-case1.png    | Bin 0 -> 42293 bytes
+ .../vcx-sim-master/assets/images/lab0-case2.png    | Bin 0 -> 58986 bytes
+ .../vcx-sim-master/assets/images/lab0-case3.png    | Bin 0 -> 144187 bytes
+ .../vcx-sim-master/assets/images/lab0-case4.png    | Bin 0 -> 110155 bytes
+ .../vcx-sim-master/assets/images/lab0-case5.png    | Bin 0 -> 193874 bytes
+ .../assets/images/vcl-logo-16x16.png               | Bin 0 -> 1985 bytes
+ .../assets/images/vcl-logo-256x256.png             | Bin 0 -> 4533 bytes
+ .../assets/images/vcl-logo-32x32.png               | Bin 0 -> 2203 bytes
+ .../assets/images/vcl-logo-48x48.png               | Bin 0 -> 2439 bytes
+ .../vcx-sim-master/assets/scenes/fluid/fluid.yaml  |  21 +
+ lab0/vcx/vcx-sim-master/assets/shaders/flat.frag   |  11 +
+ lab0/vcx/vcx-sim-master/assets/shaders/flat.vert   |  14 +
+ lab0/vcx/vcx-sim-master/assets/shaders/fluid.frag  |  77 ++
+ lab0/vcx/vcx-sim-master/assets/shaders/fluid.vert  |  36 +
+ lab0/vcx/vcx-sim-master/assets/shaders/phong.frag  |  92 +++
+ .../assets/shaders/sphere_phong.vert               |  36 +
+ .../vcx-sim-master/assets/shaders/triangle.frag    |   9 +
+ .../vcx-sim-master/assets/shaders/triangle.vert    |  11 +
+ lab0/vcx/vcx-sim-master/lab0-GettingStarted.md     | 107 +++
+ .../src/3rdparty/imgui_impl_glfw.cpp               | 663 ++++++++++++++++
+ .../vcx-sim-master/src/3rdparty/imgui_impl_glfw.h  |  46 ++
+ .../src/3rdparty/imgui_impl_opengl3.cpp            | 871 +++++++++++++++++++++
+ .../src/3rdparty/imgui_impl_opengl3.h              |  55 ++
+ .../src/3rdparty/imgui_impl_opengl3_loader.h       | 786 +++++++++++++++++++
+ lab0/vcx/vcx-sim-master/src/3rdparty/scope.hpp     | 574 ++++++++++++++
+ lab0/vcx/vcx-sim-master/src/3rdparty/stb_image.cpp |   4 +
+ .../src/3rdparty/tiny_obj_loader.cpp               |   4 +
+ lab0/vcx/vcx-sim-master/src/VCX/Assets/bundled.h   |  29 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Async.hpp   |  67 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Camera.hpp  |  31 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Formats.hpp | 136 ++++
+ .../vcx/vcx-sim-master/src/VCX/Engine/GL/Frame.hpp | 178 +++++
+ .../vcx-sim-master/src/VCX/Engine/GL/Program.cpp   |  37 +
+ .../vcx/vcx-sim-master/src/VCX/Engine/GL/Program.h |  36 +
+ .../src/VCX/Engine/GL/RenderItem.cpp               |  70 ++
+ .../vcx-sim-master/src/VCX/Engine/GL/RenderItem.h  |  68 ++
+ .../vcx-sim-master/src/VCX/Engine/GL/Sampler.hpp   |  59 ++
+ .../vcx-sim-master/src/VCX/Engine/GL/Shader.cpp    |  57 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/GL/Shader.h |  29 +
+ .../vcx-sim-master/src/VCX/Engine/GL/Texture.hpp   | 187 +++++
+ .../src/VCX/Engine/GL/UniformBlock.hpp             |  32 +
+ .../src/VCX/Engine/GL/VertexLayout.hpp             | 104 +++
+ .../vcx-sim-master/src/VCX/Engine/GL/resource.hpp  | 190 +++++
+ .../vcx-sim-master/src/VCX/Engine/GL/uniform.hpp   | 137 ++++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Scene.cpp   |  14 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Scene.h     |  82 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Sphere.cpp  |  54 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/Sphere.h    |  26 +
+ .../vcx-sim-master/src/VCX/Engine/SurfaceMesh.cpp  |  83 ++
+ .../vcx-sim-master/src/VCX/Engine/SurfaceMesh.h    |  40 +
+ .../vcx-sim-master/src/VCX/Engine/TextureND.hpp    | 121 +++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/app.cpp     | 212 +++++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/app.h       |  69 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/loader.cpp  | 442 +++++++++++
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/loader.h    |  21 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/math.hpp    |  30 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/prelude.hpp |  30 +
+ lab0/vcx/vcx-sim-master/src/VCX/Engine/type.hpp    |  41 +
+ .../vcx-sim-master/src/VCX/Examples/ImGui/main.cpp |  35 +
+ .../src/VCX/Examples/Triangle/main.cpp             |  72 ++
+ .../src/VCX/Labs/0-GettingStarted/App.cpp          |  14 +
+ .../src/VCX/Labs/0-GettingStarted/App.h            |  33 +
+ .../src/VCX/Labs/0-GettingStarted/CaseBox.cpp      | 103 +++
+ .../src/VCX/Labs/0-GettingStarted/CaseBox.h        |  35 +
+ .../src/VCX/Labs/0-GettingStarted/CaseFixed.cpp    |  85 ++
+ .../src/VCX/Labs/0-GettingStarted/CaseFixed.h      |  29 +
+ .../src/VCX/Labs/0-GettingStarted/CaseFluid.cpp    | 140 ++++
+ .../src/VCX/Labs/0-GettingStarted/CaseFluid.h      |  59 ++
+ .../VCX/Labs/0-GettingStarted/CaseMassSpring.cpp   | 104 +++
+ .../src/VCX/Labs/0-GettingStarted/CaseMassSpring.h |  40 +
+ .../VCX/Labs/0-GettingStarted/CaseResizable.cpp    |  55 ++
+ .../src/VCX/Labs/0-GettingStarted/CaseResizable.h  |  28 +
+ .../src/VCX/Labs/0-GettingStarted/FluidSimulator.h |  25 +
+ .../VCX/Labs/0-GettingStarted/MassSpringSystem.h   | 110 +++
+ .../src/VCX/Labs/0-GettingStarted/main.cpp         |  13 +
+ .../src/VCX/Labs/1-RigidBody/main.cpp              |   5 +
+ .../VCX/Labs/2-FluidSimulation/FluidSimulator.h    | 169 ++++
+ .../src/VCX/Labs/2-FluidSimulation/main.cpp        |   5 +
+ .../vcx/vcx-sim-master/src/VCX/Labs/3-FEM/main.cpp |   5 +
+ .../src/VCX/Labs/Common/FlyCameraManager.cpp       | 131 ++++
+ .../src/VCX/Labs/Common/FlyCameraManager.h         |  66 ++
+ .../vcx/vcx-sim-master/src/VCX/Labs/Common/ICase.h |  29 +
+ .../src/VCX/Labs/Common/ImGuiHelper.cpp            |  76 ++
+ .../src/VCX/Labs/Common/ImGuiHelper.h              |  26 +
+ .../src/VCX/Labs/Common/ImageRGB.cpp               |  42 +
+ .../vcx-sim-master/src/VCX/Labs/Common/ImageRGB.h  |  13 +
+ .../src/VCX/Labs/Common/OrbitCameraManager.cpp     | 193 +++++
+ .../src/VCX/Labs/Common/OrbitCameraManager.h       |  74 ++
+ lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/UI.cpp | 326 ++++++++
+ lab0/vcx/vcx-sim-master/src/VCX/Labs/Common/UI.h   |  68 ++
+ .../vcx-sim-master/src/VCX/Labs/Scene/Content.cpp  |  76 ++
+ .../vcx-sim-master/src/VCX/Labs/Scene/Content.h    |  12 +
+ .../src/VCX/Labs/Scene/SceneObject.cpp             | 157 ++++
+ .../src/VCX/Labs/Scene/SceneObject.h               |  77 ++
+ lab0/vcx/vcx-sim-master/xmake.lua                  | 140 ++++
+ 108 files changed, 9621 insertions(+), 23 deletions(-)
+
+commit 7efcc0c72a5d4d72d38986d1a380b766b205926a
+Author: csxq <143505246+csxq0605@users.noreply.github.com>
+Date:   Thu Mar 5 18:38:15 2026 +0800
+
+    Initial commit
+
+ LICENSE   | 21 +++++++++++++++++++++
+ README.md |  2 ++
+ 2 files changed, 23 insertions(+)
